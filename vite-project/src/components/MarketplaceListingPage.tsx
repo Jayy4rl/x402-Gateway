@@ -69,67 +69,52 @@ const MarketplaceListingPage: React.FC<MarketplaceListingPageProps> = ({ onNavig
   };
 
 
-  const handleUploadSpec = async (file: File) => {
-  if (!walletAddress) throw new Error('Please connect your wallet first');
-    // For now, just create a stub listing entry — storage/parse flow will be implemented later
-  // intentionally not setting a page-level loading flag; modals show their own loading
+  const handleUploadSpec = async (file: File, walletAddress: string, pricePerCall: string) => {
+    if (!walletAddress) throw new Error('Please connect your wallet first');
+    
     try {
-      // simple slug based on filename
-      const name = file.name.replace(/\.[^.]+$/, '');
-  const slug = name.split(/\s+|[._-]+/).slice(0,2).join('-').toLowerCase().replace(/[^a-z0-9-]/g,'') || 'api';
-      const gatewayUrl = `https://x402-gateway.vercel.app/${slug}`;
-
-      const listing = await apiService.createListing({
-        name: name,
-        originalBaseUrl: '',
-        baseUrl: gatewayUrl,
-        description: `Imported spec: ${file.name}`,
-        pricePerCall: 'free',
-        category: 'Other',
-        owner: walletAddress,
-        source: 'upload',
-      });
-
-      setSuccess(`Spec "${listing.name}" uploaded successfully!`);
+      // Read file content
+      const content = await file.text();
+      
+      // Determine file type
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      const fileType = (ext === 'yml' || ext === 'yaml') ? 'yaml' : 'json';
+      
+      // Upload spec to backend
+      const result = await apiService.uploadSpec(content, fileType, walletAddress, pricePerCall);
+      
+      setSuccess(`API "${result.listing.name}" created with ${result.endpointsCount} endpoints!`);
       await fetchApiListings();
-      setTimeout(() => setSuccess(null), 3000);
-    } finally {
-      // modal-level loading is handled inside the modal components
+      
+      setTimeout(() => {
+        setSuccess(null);
+        if (onNavigate) {
+          onNavigate('dashboard');
+        }
+      }, 2000);
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : 'Failed to upload spec');
     }
   };
 
-  const handlePasteUrl = async (url: string) => {
-  if (!walletAddress) throw new Error('Please connect your wallet first');
-  // intentionally not setting a page-level loading flag; modals show their own loading
+  const handlePasteUrl = async (url: string, walletAddress: string, pricePerCall: string) => {
+    if (!walletAddress) throw new Error('Please connect your wallet first');
+    
     try {
-      // generate slug from domain if possible
-      let slug = 'api';
-      try {
-        const parsed = new URL(url);
-        const host = parsed.hostname.split('.').slice(-2, -0).join('-');
-        slug = host || url.replace(/https?:\/\//, '').split(/\W+/).slice(0,2).join('-');
-      } catch {
-        slug = url.split(/\W+/).slice(0,2).join('-');
-      }
-  slug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '') || 'api';
-      const gatewayUrl = `https://x402-gateway.vercel.app/${slug}`;
-
-      const listing = await apiService.createListing({
-        name: url,
-        originalBaseUrl: url,
-        baseUrl: gatewayUrl,
-        description: `Imported from URL: ${url}`,
-        pricePerCall: 'free',
-        category: 'Other',
-        owner: walletAddress,
-        source: 'url',
-      });
-
-      setSuccess(`API "${listing.name}" imported successfully from URL!`);
+      // Parse URL with backend
+      const result = await apiService.parseDocumentationUrl(url, walletAddress, pricePerCall);
+      
+      setSuccess(`API "${result.listing.name}" imported with ${result.endpointsCount} endpoints!`);
       await fetchApiListings();
-      setTimeout(() => setSuccess(null), 3000);
-    } finally {
-      // modal-level loading is handled inside the modal components
+      
+      setTimeout(() => {
+        setSuccess(null);
+        if (onNavigate) {
+          onNavigate('dashboard');
+        }
+      }, 2000);
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : 'Failed to import from URL');
     }
   };
 
@@ -312,18 +297,12 @@ const MarketplaceListingPage: React.FC<MarketplaceListingPageProps> = ({ onNavig
       <UploadSpecModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        onUpload={async (file: File) => {
-          await handleUploadSpec(file);
-          setIsUploadModalOpen(false);
-        }}
+        onUpload={handleUploadSpec}
       />
       <PasteUrlModal
         isOpen={isPasteUrlModalOpen}
         onClose={() => setIsPasteUrlModalOpen(false)}
-        onSubmit={async (url: string) => {
-          await handlePasteUrl(url);
-          setIsPasteUrlModalOpen(false);
-        }}
+        onSubmit={handlePasteUrl}
       />
     </div>
   );

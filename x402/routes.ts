@@ -1,8 +1,35 @@
 import { Router } from "express";
 import { DatabaseService } from "./db/service.ts";
+import {
+  parseOpenAPISpec,
+  parseYAMLSpec,
+  parseDocumentationURL,
+  type ParsedEndpoint,
+} from "./db/parsers/index";
+import type { APIEndpoint } from "./db/schema";
 
 const router = Router();
 const db = new DatabaseService();
+
+/**
+ * Converts parsed endpoints to database format
+ *
+ * @param endpoints - Array of parsed endpoints
+ * @returns Array of endpoints in database format
+ */
+function convertEndpointsToDBFormat(
+  endpoints: ParsedEndpoint[],
+): Omit<APIEndpoint, "id" | "api_id" | "created_at">[] {
+  return endpoints.map(endpoint => ({
+    path: endpoint.path,
+    method: endpoint.method,
+    summary: endpoint.summary,
+    description: endpoint.description,
+    parameters: endpoint.parameters as unknown as Record<string, unknown>,
+    request_body: endpoint.request_body as unknown as Record<string, unknown>,
+    responses: endpoint.responses,
+  }));
+}
 
 // ==================== API Listing Routes ====================
 
@@ -215,6 +242,160 @@ router.post("/listings/:id/usage", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to record API usage",
+    });
+  }
+});
+
+// ==================== Spec Upload Routes ====================
+
+// Upload and parse OpenAPI spec file
+router.post("/listings/upload-spec", async (req, res) => {
+  try {
+    const { spec, fileType, walletAddress: owner } = req.body;
+
+    if (!spec || !owner) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: spec, walletAddress",
+      });
+    }
+
+    // Parse the spec based on file type
+    let parseResult;
+    if (fileType === "yaml" || fileType === "yml") {
+      parseResult = await parseYAMLSpec(spec);
+    } else {
+      parseResult = await parseOpenAPISpec(spec);
+    }
+
+    if (!parseResult.success || !parseResult.data) {
+      return res.status(400).json({
+        success: false,
+        error: parseResult.error || "Failed to parse API specification",
+      });
+    }
+
+    const parsedData = parseResult.data;
+
+    // Create API listing
+    const newListing = {
+      name: parsedData.name,
+      description: parsedData.description,
+      base_url: parsedData.base_url || "",
+      api_key: null,
+      price_per_call: req.body.pricePerCall || "100", // Default or from form
+      category: parsedData.tags?.[0] || "Uncategorized",
+      source: "spec_upload",
+      owner,
+      status: "active",
+      total_calls: 0,
+      revenue: "0",
+    };
+
+    const createdListing = await db.createAPIListing(newListing);
+
+    // Create endpoints
+    if (parsedData.endpoints && parsedData.endpoints.length > 0) {
+      const dbEndpoints = convertEndpointsToDBFormat(parsedData.endpoints);
+      await db.createEndpoints(createdListing.id, dbEndpoints);
+    }
+
+    res.status(201).json({
+      success: true,
+      data: {
+        listing: createdListing,
+        endpointsCount: parsedData.endpoints?.length || 0,
+      },
+      message: "API listing created successfully from specification",
+    });
+  } catch (error) {
+    console.error("Error uploading API spec:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to upload API specification",
+    });
+  }
+});
+
+// Parse documentation URL
+router.post("/listings/parse-url", async (req, res) => {
+  try {
+    const { url, walletAddress: owner } = req.body;
+
+    if (!url || !owner) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: url, walletAddress",
+      });
+    }
+
+    // Parse the documentation URL
+    const parseResult = await parseDocumentationURL(url);
+
+    if (!parseResult.success || !parseResult.data) {
+      return res.status(400).json({
+        success: false,
+        error: parseResult.error || "Failed to parse documentation URL",
+      });
+    }
+
+    const parsedData = parseResult.data;
+
+    // Create API listing
+    const newListing = {
+      name: parsedData.name,
+      description: parsedData.description,
+      base_url: parsedData.base_url || "",
+      api_key: null,
+      price_per_call: req.body.pricePerCall || "100", // Default or from form
+      category: parsedData.tags?.[0] || "Uncategorized",
+      source: "url_import",
+      owner,
+      status: "active",
+      total_calls: 0,
+      revenue: "0",
+    };
+
+    const createdListing = await db.createAPIListing(newListing);
+
+    // Create endpoints
+    if (parsedData.endpoints && parsedData.endpoints.length > 0) {
+      const dbEndpoints = convertEndpointsToDBFormat(parsedData.endpoints);
+      await db.createEndpoints(createdListing.id, dbEndpoints);
+    }
+
+    res.status(201).json({
+      success: true,
+      data: {
+        listing: createdListing,
+        endpointsCount: parsedData.endpoints?.length || 0,
+      },
+      message: "API listing created successfully from documentation URL",
+    });
+  } catch (error) {
+    console.error("Error parsing documentation URL:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to parse documentation URL",
+    });
+  }
+});
+
+// Get endpoints for an API listing
+router.get("/listings/:id/endpoints", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const endpoints = await db.getEndpointsByAPIId(id);
+
+    res.json({
+      success: true,
+      data: endpoints,
+    });
+  } catch (error) {
+    console.error("Error fetching endpoints:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch endpoints",
     });
   }
 });

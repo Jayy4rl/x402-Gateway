@@ -1,5 +1,5 @@
 import pool from "./pool.ts";
-import type { APIListing, APIUsage } from "./schema.ts";
+import type { APIListing, APIUsage, APIEndpoint } from "./schema.ts";
 
 export class DatabaseService {
   /**
@@ -166,6 +166,141 @@ export class DatabaseService {
     } finally {
       client.release();
     }
+  }
+
+  // ==================== Endpoint Management ====================
+
+  /**
+   * Creates a new API endpoint
+   *
+   * @param endpoint - The endpoint data to create
+   * @returns The created endpoint
+   */
+  async createEndpoint(endpoint: Omit<APIEndpoint, "id" | "created_at">): Promise<APIEndpoint> {
+    const result = await pool.query(
+      `INSERT INTO api_endpoints 
+       (api_id, path, method, summary, description, parameters, request_body, responses) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+       RETURNING *`,
+      [
+        endpoint.api_id,
+        endpoint.path,
+        endpoint.method,
+        endpoint.summary || null,
+        endpoint.description || null,
+        endpoint.parameters ? JSON.stringify(endpoint.parameters) : null,
+        endpoint.request_body ? JSON.stringify(endpoint.request_body) : null,
+        endpoint.responses ? JSON.stringify(endpoint.responses) : null,
+      ],
+    );
+    return result.rows[0];
+  }
+
+  /**
+   * Creates multiple endpoints for an API in a transaction
+   *
+   * @param apiId - The API listing ID
+   * @param endpoints - Array of endpoints to create
+   * @returns Array of created endpoints
+   */
+  async createEndpoints(
+    apiId: string,
+    endpoints: Omit<APIEndpoint, "id" | "api_id" | "created_at">[],
+  ): Promise<APIEndpoint[]> {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const createdEndpoints: APIEndpoint[] = [];
+      for (const endpoint of endpoints) {
+        const result = await client.query(
+          `INSERT INTO api_endpoints 
+           (api_id, path, method, summary, description, parameters, request_body, responses) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+           RETURNING *`,
+          [
+            apiId,
+            endpoint.path,
+            endpoint.method,
+            endpoint.summary || null,
+            endpoint.description || null,
+            endpoint.parameters ? JSON.stringify(endpoint.parameters) : null,
+            endpoint.request_body ? JSON.stringify(endpoint.request_body) : null,
+            endpoint.responses ? JSON.stringify(endpoint.responses) : null,
+          ],
+        );
+        createdEndpoints.push(result.rows[0]);
+      }
+
+      await client.query("COMMIT");
+      return createdEndpoints;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Gets all endpoints for an API listing
+   *
+   * @param apiId - The API listing ID
+   * @returns Array of endpoints
+   */
+  async getEndpointsByAPIId(apiId: string): Promise<APIEndpoint[]> {
+    const result = await pool.query(
+      "SELECT * FROM api_endpoints WHERE api_id = $1 ORDER BY path, method",
+      [apiId],
+    );
+    return result.rows;
+  }
+
+  /**
+   * Gets a specific endpoint by ID
+   *
+   * @param id - The endpoint ID
+   * @returns The endpoint if found, null otherwise
+   */
+  async getEndpoint(id: string): Promise<APIEndpoint | null> {
+    const result = await pool.query("SELECT * FROM api_endpoints WHERE id = $1", [id]);
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Deletes all endpoints for an API listing
+   *
+   * @param apiId - The API listing ID
+   */
+  async deleteEndpointsByAPIId(apiId: string): Promise<void> {
+    await pool.query("DELETE FROM api_endpoints WHERE api_id = $1", [apiId]);
+  }
+
+  /**
+   * Updates an endpoint
+   *
+   * @param id - The endpoint ID
+   * @param updates - The endpoint data to update
+   * @returns The updated endpoint
+   */
+  async updateEndpoint(id: string, updates: Partial<APIEndpoint>): Promise<APIEndpoint> {
+    const setClause = Object.keys(updates)
+      .filter(key => key !== "id" && key !== "api_id" && key !== "created_at")
+      .map((key, index) => `${key} = $${index + 2}`)
+      .join(", ");
+    const values = Object.entries(updates)
+      .filter(([key]) => key !== "id" && key !== "api_id" && key !== "created_at")
+      .map(([, value]) => value);
+
+    const result = await pool.query(
+      `UPDATE api_endpoints SET ${setClause} WHERE id = $1 RETURNING *`,
+      [id, ...values],
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error("Endpoint not found");
+    }
+    return result.rows[0];
   }
 
   /**

@@ -57,3 +57,16 @@ export interface GitHubAuthResponse {
   token_type: string;
   scope: string;
 }
+
+export interface APIEndpoint {
+  id: string;
+  api_id: string;
+  path: string;
+  method: string;
+  summary?: string;
+  description?: string;
+  parameters?: Record<string, unknown>;
+  request_body?: Record<string, unknown>;
+  responses?: Record<string, unknown>;
+  created_at: string;
+}

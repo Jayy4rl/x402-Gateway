@@ -69,6 +69,51 @@ export const apiService = {
     if (!data.success) throw new Error(data.error || 'Failed to fetch user listings');
     return data.data;
   },
+
+  // Upload OpenAPI/Swagger spec
+  async uploadSpec(spec: string, fileType: 'json' | 'yaml' | 'yml', walletAddress: string, pricePerCall: string): Promise<{ listing: APIListing; endpointsCount: number }> {
+    const response = await fetch(`${API_BASE_URL}/listings/upload-spec`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        spec,
+        fileType,
+        walletAddress,
+        pricePerCall,
+      }),
+    });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to upload spec');
+    return data.data;
+  },
+
+  // Parse documentation URL
+  async parseDocumentationUrl(url: string, walletAddress: string, pricePerCall: string): Promise<{ listing: APIListing; endpointsCount: number }> {
+    const response = await fetch(`${API_BASE_URL}/listings/parse-url`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url,
+        walletAddress,
+        pricePerCall,
+      }),
+    });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to parse URL');
+    return data.data;
+  },
+
+  // Get endpoints for an API
+  async getEndpoints(apiId: string): Promise<unknown[]> {
+    const response = await fetch(`${API_BASE_URL}/listings/${apiId}/endpoints`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to fetch endpoints');
+    return data.data;
+  },
 };
 
 // ==================== GitHub OAuth Services ====================

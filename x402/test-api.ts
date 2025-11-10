@@ -79,7 +79,6 @@ async function testApiEndpoints() {
     });
     const deleteData = await deleteRes.json();
     console.log("Deleted:", deleteData);
-
   } catch (error) {
     console.error("Test failed:", error);
   }
