@@ -9,8 +9,8 @@ import { apiService } from '../services/api.service.ts';
 import type { APIListing, AddAPIFormData } from '../types/marketplace.types.ts';
 
 interface MarketplaceListingPageProps {
-  // Accept either a state setter (used in several callers) or a simple navigation callback
-  onNavigate?: React.Dispatch<React.SetStateAction<unknown>> | ((page: string) => void);
+  // Accept a navigation callback that can take page and optional apiId
+  onNavigate?: ((page: "dashboard" | "api-detail", apiId?: string) => void);
 }
 
 const MarketplaceListingPage: React.FC<MarketplaceListingPageProps> = ({ onNavigate }) => {
@@ -63,8 +63,8 @@ const MarketplaceListingPage: React.FC<MarketplaceListingPageProps> = ({ onNavig
     
     setTimeout(() => {
       setSuccess(null);
-      if (onNavigate) {
-        onNavigate('dashboard');
+      if (onNavigate && listing.id) {
+        onNavigate('api-detail', listing.id);
       }
     }, 2000);
   };
@@ -89,8 +89,8 @@ const MarketplaceListingPage: React.FC<MarketplaceListingPageProps> = ({ onNavig
       
       setTimeout(() => {
         setSuccess(null);
-        if (onNavigate) {
-          onNavigate('dashboard');
+        if (onNavigate && result.listing.id) {
+          onNavigate('api-detail', result.listing.id);
         }
       }, 2000);
     } catch (err) {
@@ -110,8 +110,8 @@ const MarketplaceListingPage: React.FC<MarketplaceListingPageProps> = ({ onNavig
       
       setTimeout(() => {
         setSuccess(null);
-        if (onNavigate) {
-          onNavigate('dashboard');
+        if (onNavigate && result.listing.id) {
+          onNavigate('api-detail', result.listing.id);
         }
       }, 2000);
     } catch (err) {

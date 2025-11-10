@@ -6,8 +6,8 @@ export interface APIListing {
   baseUrl: string;
   description: string;
   apiKey?: string; // Optional, encrypted on backend
-  pricePerCall: number; // In sats or USD
-  currency: "sats" | "usd";
+  pricePerCall: number; // In usd or USD
+  currency: "usd" | "usd";
   category?: string;
   tags?: string[];
   owner: string; // Wallet address of owner
@@ -65,7 +65,7 @@ export interface CreateAPIRequest {
   description: string;
   apiKey?: string;
   pricePerCall: number;
-  currency: "sats" | "usd";
+  currency: "usd" | "usd";
   category?: string;
   tags?: string[];
 

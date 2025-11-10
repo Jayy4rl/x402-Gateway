@@ -20,6 +20,8 @@ import Dashboard from "./components/Dashboard";
 import MarketplaceListingPage from "./components/MarketplaceListingPage";
 import ActivityPage from "./components/ActivityPage";
 import WalletButton from "./components/WalletButton";
+import APIDetailPage from "./components/APIDetailPage";
+import SettingsPage from "./components/SettingsPage";
 
 type Page =
   | "dashboard"
@@ -27,11 +29,22 @@ type Page =
   | "project-overview"
   | "analytics"
   | "marketplace-listing"
-  | "activity";
+  | "activity"
+  | "api-detail"
+  | "settings";
 
 const App: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
+  const [selectedApiId, setSelectedApiId] = useState<string | null>(null);
+
+  // Navigation handler that can handle API ID for detail page
+  const handleNavigate = (page: Page, apiId?: string) => {
+    setCurrentPage(page);
+    if (apiId !== undefined) {
+      setSelectedApiId(apiId);
+    }
+  };
 
   // Show login page if not authenticated
   if (!isAuthenticated) {
@@ -42,14 +55,14 @@ const App: React.FC = () => {
   return (
     <div>
       {currentPage === "dashboard" && (
-        <DashboardWrapper onNavigate={setCurrentPage} />
+        <DashboardWrapper onNavigate={handleNavigate} />
       )}
       {currentPage === "new-project" && (
         <NewProject onNavigate={setCurrentPage} />
       )}
       {currentPage === "marketplace-listing" && (
         <MarketplaceListingPage
-          onNavigate={(page: unknown) => setCurrentPage(page as Page)}
+          onNavigate={handleNavigate}
         />
       )}
       {currentPage === "project-overview" && (
@@ -59,17 +72,26 @@ const App: React.FC = () => {
       {currentPage === "activity" && (
         <ActivityPageWrapper onNavigate={setCurrentPage} />
       )}
+      {currentPage === "api-detail" && selectedApiId && (
+        <APIDetailPageWrapper 
+          apiId={selectedApiId} 
+          onNavigate={setCurrentPage} 
+        />
+      )}
+      {currentPage === "settings" && (
+        <SettingsPageWrapper onNavigate={setCurrentPage} />
+      )}
     </div>
   );
 };
 
 // Dashboard Wrapper
-const DashboardWrapper: React.FC<{ onNavigate: (page: Page) => void }> = ({
+const DashboardWrapper: React.FC<{ onNavigate: (page: Page, apiId?: string) => void }> = ({
   onNavigate,
 }) => {
   return (
     <div className="min-h-screen bg-black text-white">
-      <Header onNavigate={onNavigate} currentPage="dashboard" />
+      <Header onNavigate={(page) => onNavigate(page)} currentPage="dashboard" />
       <Dashboard onNavigate={onNavigate} />
     </div>
   );
@@ -84,6 +106,31 @@ const ActivityPageWrapper: React.FC<{ onNavigate: (page: Page) => void }> = ({
       <Header onNavigate={onNavigate} currentPage="activity" />
       <ActivityPage />
     </div>
+  );
+};
+
+// API Detail Page Wrapper
+const APIDetailPageWrapper: React.FC<{ 
+  apiId: string;
+  onNavigate: (page: Page) => void;
+}> = ({ apiId, onNavigate }) => {
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <Header onNavigate={onNavigate} currentPage="api-detail" />
+      <APIDetailPage 
+        apiId={apiId} 
+        onBack={() => onNavigate("dashboard")}
+      />
+    </div>
+  );
+};
+
+// Settings Page Wrapper
+const SettingsPageWrapper: React.FC<{ onNavigate: (page: Page) => void }> = ({
+  onNavigate,
+}) => {
+  return (
+    <SettingsPage onNavigate={(page: string) => onNavigate(page as Page)} />
   );
 };
 
@@ -148,6 +195,16 @@ const Header: React.FC<{
           onClick={() => onNavigate("activity")}
         >
           Activity
+        </button>
+        <button
+          className={`py-3 ${
+            currentPage === "settings"
+              ? "border-b-2 border-white"
+              : "text-gray-400 hover:text-white"
+          }`}
+          onClick={() => onNavigate("settings")}
+        >
+          Settings
         </button>
       </nav>
     </header>
@@ -503,7 +560,7 @@ const Analytics: React.FC<{ onNavigate: (page: Page) => void }> = ({
               <h3 className="text-sm text-gray-400">Revenue Earned</h3>
               <TrendingUp className="w-4 h-4 text-gray-500" />
             </div>
-            <div className="text-3xl font-bold mb-2">0 sats</div>
+            <div className="text-3xl font-bold mb-2">$0 </div>
             <div className="text-sm text-gray-500">No data available</div>
           </div>
 

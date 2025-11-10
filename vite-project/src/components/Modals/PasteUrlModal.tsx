@@ -119,7 +119,7 @@ const PasteUrlModal: React.FC<PasteUrlModalProps> = ({
                 />
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                Cost per API call (e.g., $0.001, 100 sats, or free)
+                Cost per API call (e.g., $0.001, 100 usd, or free)
               </p>
             </div>
             <div className="mt-4">

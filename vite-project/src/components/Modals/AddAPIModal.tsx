@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
-import { X, DollarSign, Link2, FileText, Key, Tag, ChevronDown } from 'lucide-react';
-import type { AddAPIFormData } from '../../types/marketplace.types.ts';
+import React, { useState, useEffect } from 'react';
+import { X, DollarSign, Link2, FileText, Key, Tag, ChevronDown, Plus, Trash2, Code } from 'lucide-react';
+import type { AddAPIFormData, EndpointFormData } from '../../types/marketplace.types.ts';
 import { API_CATEGORIES } from '../../constants/categories.ts';
+import { saveFormDraft, getFormDraft, clearFormDraft } from '../../utils/storage.ts';
 
 interface AddAPIModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: AddAPIFormData) => Promise<void>;
 }
+
+const HTTP_METHODS: Array<EndpointFormData['method']> = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 
 const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState<AddAPIFormData>({
@@ -18,15 +21,72 @@ const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) 
     pricePerCall: '',
     category: '',
     walletAddress: '',
+    endpoints: [{ path: '', method: 'GET', summary: '', description: '' }], // Start with one endpoint
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Load draft on mount
+  useEffect(() => {
+    if (isOpen) {
+      const draft = getFormDraft<AddAPIFormData>();
+      if (draft && draft.data) {
+        setFormData({
+          ...draft.data,
+          endpoints: draft.data.endpoints && draft.data.endpoints.length > 0 
+            ? draft.data.endpoints 
+            : [{ path: '', method: 'GET', summary: '', description: '' }],
+        });
+      }
+    }
+  }, [isOpen]);
+
+  // Auto-save draft as user types (debounced)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timeoutId = setTimeout(() => {
+      // Only save if there's some content
+      if (formData.name || formData.baseUrl || formData.description) {
+        saveFormDraft(formData);
+      }
+    }, 1000); // 1 second debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [formData, isOpen]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setError(null);
+  };
+
+  const handleEndpointChange = (index: number, field: keyof EndpointFormData, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      endpoints: prev.endpoints?.map((endpoint, i) =>
+        i === index ? { ...endpoint, [field]: value } : endpoint
+      ) || [],
+    }));
+    setError(null);
+  };
+
+  const addEndpoint = () => {
+    setFormData(prev => ({
+      ...prev,
+      endpoints: [
+        ...(prev.endpoints || []),
+        { path: '', method: 'GET', summary: '', description: '' },
+      ],
+    }));
+  };
+
+  const removeEndpoint = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      endpoints: prev.endpoints?.filter((_, i) => i !== index) || [],
+    }));
   };
 
   const validateForm = (): boolean => {
@@ -46,12 +106,14 @@ const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) 
       setError('Category is required');
       return false;
     }
-    // price must be a positive number (we allow values like 0.001 or integer sats)
+    
+    // Price validation
     const priceNum = parseFloat(formData.pricePerCall.replace(/[^0-9.]/g, ''));
-    if (isNaN(priceNum) || priceNum <= 0) {
-      setError('Price per call must be a number greater than 0');
+    if (isNaN(priceNum) || priceNum < 0) {
+      setError('Price per call must be a valid number');
       return false;
     }
+    
     if (!formData.walletAddress || !formData.walletAddress.trim()) {
       setError('Wallet address is required');
       return false;
@@ -63,6 +125,30 @@ const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) 
     } catch {
       setError('Please enter a valid URL');
       return false;
+    }
+
+    // Validate endpoints (at least 1 required)
+    if (!formData.endpoints || formData.endpoints.length === 0) {
+      setError('At least one endpoint is required');
+      return false;
+    }
+
+    // Validate each endpoint
+    for (let i = 0; i < formData.endpoints.length; i++) {
+      const endpoint = formData.endpoints[i];
+      if (!endpoint.path.trim()) {
+        setError(`Endpoint ${i + 1}: Path is required`);
+        return false;
+      }
+      if (!endpoint.method) {
+        setError(`Endpoint ${i + 1}: Method is required`);
+        return false;
+      }
+      // Path should start with /
+      if (!endpoint.path.startsWith('/')) {
+        setError(`Endpoint ${i + 1}: Path must start with /`);
+        return false;
+      }
     }
 
     return true;
@@ -80,15 +166,17 @@ const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) 
 
     try {
       await onSubmit(formData);
-      // Reset form
+      // Clear draft and reset form
+      clearFormDraft();
       setFormData({
         name: '',
         description: '',
         baseUrl: '',
         apiKey: '',
-  pricePerCall: '',
-  category: '',
-  walletAddress: ''
+        pricePerCall: '',
+        category: '',
+        walletAddress: '',
+        endpoints: [{ path: '', method: 'GET', summary: '', description: '' }],
       });
       onClose();
     } catch (err) {
@@ -96,6 +184,14 @@ const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) 
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClose = () => {
+    // Save draft before closing
+    if (formData.name || formData.baseUrl) {
+      saveFormDraft(formData);
+    }
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -107,7 +203,7 @@ const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) 
         <div className="flex items-center justify-between p-6 border-b border-gray-800">
           <h2 className="text-2xl font-bold text-white">Add API Manually</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
             disabled={loading}
           >
@@ -245,7 +341,7 @@ const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) 
               />
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              Cost per API call (e.g., $0.001, 100 sats, or free)
+              Cost per API call (e.g., $0.001, 100 usd, or free)
             </p>
           </div>
 
@@ -278,11 +374,121 @@ const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) 
             </p>
           </div>
 
+          {/* Endpoints Section */}
+          <div className="space-y-4 pt-4 border-t border-gray-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
+                  <Code className="w-5 h-5" />
+                  <span>API Endpoints</span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Define at least one endpoint (path and method required)
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addEndpoint}
+                className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm text-gray-300 transition-colors flex items-center space-x-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Endpoint</span>
+              </button>
+            </div>
+
+            {formData.endpoints?.map((endpoint, index) => (
+              <div
+                key={index}
+                className="p-4 bg-gray-900/50 border border-gray-800 rounded-lg space-y-3"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-400">
+                    Endpoint {index + 1}
+                  </span>
+                  {formData.endpoints && formData.endpoints.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeEndpoint(index)}
+                      className="p-1.5 hover:bg-red-900/20 rounded text-red-400 hover:text-red-300 transition-colors"
+                      title="Remove endpoint"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Path */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                      Path <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={endpoint.path}
+                      onChange={(e) => handleEndpointChange(index, 'path', e.target.value)}
+                      placeholder="/api/users"
+                      className="w-full bg-black border border-gray-800 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                      required
+                    />
+                  </div>
+
+                  {/* Method */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                      Method <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={endpoint.method}
+                      onChange={(e) => handleEndpointChange(index, 'method', e.target.value)}
+                      className="w-full bg-black border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors cursor-pointer"
+                      required
+                    >
+                      {HTTP_METHODS.map((method) => (
+                        <option key={method} value={method} className="bg-gray-900">
+                          {method}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                    Summary (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={endpoint.summary || ''}
+                    onChange={(e) => handleEndpointChange(index, 'summary', e.target.value)}
+                    placeholder="Brief description of what this endpoint does"
+                    className="w-full bg-black border border-gray-800 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                    Description (Optional)
+                  </label>
+                  <textarea
+                    value={endpoint.description || ''}
+                    onChange={(e) => handleEndpointChange(index, 'description', e.target.value)}
+                    placeholder="Detailed description, parameters, response format..."
+                    rows={2}
+                    className="w-full bg-black border border-gray-800 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors resize-none"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
           {/* Form Actions */}
           <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-800">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-6 py-2.5 border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 transition-colors"
               disabled={loading}
             >

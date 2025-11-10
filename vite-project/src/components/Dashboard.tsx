@@ -11,7 +11,7 @@ import type { APIListing } from "../types/marketplace.types.ts";
 import APICard from "./APICard.tsx";
 
 interface DashboardProps {
-  onNavigate: (page: "dashboard" | "marketplace-listing" | "activity" | "new-project" | "project-overview" | "analytics") => void;
+  onNavigate: (page: "dashboard" | "marketplace-listing" | "activity" | "new-project" | "project-overview" | "analytics" | "api-detail", apiId?: string) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
@@ -97,7 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <TrendingUp className="w-4 h-4 text-gray-500" />
                   <span className="text-sm">Revenue</span>
                 </div>
-                <span className="text-sm">82.46 sats / 100K sats</span>
+                <span className="text-sm">82.46 usd / 100K usd</span>
               </div>
             </div>
           </div>
@@ -149,10 +149,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <APICard
                   key={api.id}
                   api={api}
-                  onClick={() => {
-                    // TODO: Navigate to API detail page
-                    console.log('Navigate to API:', api.id);
-                  }}
+                  onClick={() => onNavigate("api-detail", api.id)}
                 />
               ))}
             </div>

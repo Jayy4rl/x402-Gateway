@@ -45,7 +45,7 @@ const APICard: React.FC<APICardProps> = ({ api, onClick }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-baseline space-x-1.5">
               <span className="text-sm font-semibold text-purple-400">{api.pricePerCall}</span>
-              <span className="text-xs text-gray-500 font-medium">sats/call</span>
+              <span className="text-xs text-gray-500 font-medium">usd/call</span>
             </div>
             <span className={`px-2.5 py-1 text-xs rounded-full font-medium ${
               api.status === 'active'

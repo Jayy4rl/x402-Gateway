@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Activity, TrendingUp, DollarSign, ExternalLink, Code } from 'lucide-react';
 import { apiService } from '../services/api.service.ts';
 import APIEndpoints from './APIEndpoints.tsx';
 import type { APIListing } from '../types/marketplace.types.ts';
 
-const APIDetailPage: React.FC = () => {
-  const { apiId } = useParams<{ apiId: string }>();
-  const navigate = useNavigate();
+interface APIDetailPageProps {
+  apiId: string;
+  onBack: () => void;
+}
+
+const APIDetailPage: React.FC<APIDetailPageProps> = ({ apiId, onBack }) => {
   const [api, setApi] = useState<APIListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ const APIDetailPage: React.FC = () => {
       <div className="min-h-screen bg-black text-white">
         <div className="max-w-4xl mx-auto px-6 py-12">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={onBack}
             className="flex items-center space-x-2 text-gray-400 hover:text-white mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -70,7 +72,7 @@ const APIDetailPage: React.FC = () => {
       <header className="border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={onBack}
             className="flex items-center space-x-2 text-gray-400 hover:text-white mb-4"
           >
             <ArrowLeft className="w-4 h-4" />

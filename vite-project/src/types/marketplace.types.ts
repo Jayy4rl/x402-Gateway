@@ -6,11 +6,11 @@ export interface APIListing {
   description: string;
   baseUrl: string;
   apiKey?: string;
-  pricePerCall: string; // e.g., "$0.001" or "100 sats"
+  pricePerCall: string; // e.g., "$0.001" or "100 "
   category?: string;
   tags?: string[];
   status: "active" | "inactive" | "pending";
-  source: "github" | "manual";
+  source: "github" | "manual" | "spec_upload" | "url_import";
   githubRepo?: string;
   createdAt: string;
   updatedAt: string;
@@ -50,6 +50,14 @@ export interface AddAPIFormData {
   category?: string;
   walletAddress?: string; // owner's wallet provided in the form
   originalBaseUrl?: string; // keep original URL when we replace baseUrl with gateway URL
+  endpoints?: EndpointFormData[]; // Array of endpoints for manual entry
+}
+
+export interface EndpointFormData {
+  path: string;
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  summary?: string;
+  description?: string;
 }
 
 export interface GitHubAuthResponse {

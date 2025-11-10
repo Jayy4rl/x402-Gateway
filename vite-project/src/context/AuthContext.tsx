@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { saveWalletAddress, getWalletAddress, clearWalletAddress } from '../utils/storage.ts';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -26,12 +27,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
-  // Check for existing session on mount
+  // Check for existing session on mount using storage utility
   useEffect(() => {
-    const storedAuth = localStorage.getItem('siws_authenticated');
-    const storedAddress = localStorage.getItem('siws_wallet_address');
+    const storedAddress = getWalletAddress();
     
-    if (storedAuth === 'true' && storedAddress) {
+    if (storedAddress) {
       setIsAuthenticated(true);
       setWalletAddress(storedAddress);
     }
@@ -42,16 +42,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     if (authenticated && address) {
       setWalletAddress(address);
-      localStorage.setItem('siws_authenticated', 'true');
-      localStorage.setItem('siws_wallet_address', address);
+      saveWalletAddress(address);
     }
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setWalletAddress(null);
-    localStorage.removeItem('siws_authenticated');
-    localStorage.removeItem('siws_wallet_address');
+    clearWalletAddress();
   };
 
   return (

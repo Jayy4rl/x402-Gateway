@@ -8,28 +8,28 @@ const Analytics: React.FC = () => {
     {
       endpoint: "/v1/forecast",
       calls: 847,
-      revenue: "1,694 sats",
+      revenue: "1,694 usd",
       avgTime: "142ms",
       success: "99.2%",
     },
     {
       endpoint: "/v1/current",
       calls: 234,
-      revenue: "468 sats",
+      revenue: "468 usd",
       avgTime: "98ms",
       success: "100%",
     },
     {
       endpoint: "/v1/alerts",
       calls: 166,
-      revenue: "332 sats",
+      revenue: "332 usd",
       avgTime: "156ms",
       success: "98.8%",
     },
     {
       endpoint: "/v1/subscribe",
       calls: 89,
-      revenue: "178 sats",
+      revenue: "178 usd",
       avgTime: "201ms",
       success: "97.5%",
     },
@@ -48,35 +48,35 @@ const Analytics: React.FC = () => {
       time: "2 min ago",
       user: "user_abc",
       endpoint: "GET /v1/forecast",
-      amount: "2 sats",
+      amount: "2 usd",
       status: "success",
     },
     {
       time: "5 min ago",
       user: "user_xyz",
       endpoint: "GET /v1/current",
-      amount: "2 sats",
+      amount: "2 usd",
       status: "success",
     },
     {
       time: "8 min ago",
       user: "user_123",
       endpoint: "GET /v1/forecast",
-      amount: "2 sats",
+      amount: "2 usd",
       status: "success",
     },
     {
       time: "12 min ago",
       user: "user_456",
       endpoint: "GET /v1/alerts",
-      amount: "5 sats",
+      amount: "5 usd",
       status: "success",
     },
     {
       time: "15 min ago",
       user: "user_789",
       endpoint: "POST /v1/subscribe",
-      amount: "10 sats",
+      amount: "10 usd",
       status: "success",
     },
   ];
@@ -176,7 +176,7 @@ const Analytics: React.FC = () => {
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
             <div className="text-sm text-gray-400 mb-2">Total Revenue</div>
-            <div className="text-3xl font-bold mb-2">2,450 sats</div>
+            <div className="text-3xl font-bold mb-2">2,450 usd</div>
             <div className="flex items-center space-x-1 text-sm text-green-400">
               <TrendingUp className="w-4 h-4" />
               <span>8% from last period</span>
@@ -217,9 +217,9 @@ const Analytics: React.FC = () => {
             ))}
           </div>
           <div className="flex items-center justify-between mt-4 text-sm text-gray-400">
-            <span>0 sats</span>
-            <span>1,500 sats</span>
-            <span>3,000 sats</span>
+            <span>0 usd</span>
+            <span>1,500 usd</span>
+            <span>3,000 usd</span>
           </div>
         </div>
 
