@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS api_endpoints (
 -- API Usage table
 CREATE TABLE IF NOT EXISTS api_usage (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  api_id UUID REFERENCES api_listings(id),
+  api_id UUID REFERENCES api_listings(id) ON DELETE CASCADE,
   user_address TEXT NOT NULL,
   timestamp TIMESTAMPTZ DEFAULT NOW(),
   success BOOLEAN NOT NULL,

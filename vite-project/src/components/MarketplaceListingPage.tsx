@@ -124,14 +124,15 @@ const MarketplaceListingPage: React.FC<MarketplaceListingPageProps> = ({ onNavig
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
+            {/* Header */}
       <header className="border-b border-gray-800">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center space-x-4">
             <div
-              className="w-8 h-8 bg-white flex items-center justify-center cursor-pointer"
+              className="cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => onNavigate && onNavigate('dashboard')}
             >
-              <span className="text-black font-bold">▲</span>
+              <span className="text-cyan-500 font-bold text-lg font-mono">X402</span>
             </div>
             <h1 className="text-xl font-semibold">List Your API</h1>
           </div>

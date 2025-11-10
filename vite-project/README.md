@@ -1,19 +1,43 @@
-# React + TypeScript + Vite
+# X402 API Gateway Marketplace
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+```
+┌─────────────────────────────────────────┐
+│                                          │
+│         ●━━━━━┓                         │
+│               ┃ 4 0 2                   │
+│         ●━━━━━┛                         │
+│               ┃                         │
+│         ●━━━━━┛                         │
+│                                          │
+│           X 4 0 2                       │
+│                                          │
+└─────────────────────────────────────────┘
+```
 
-Currently, two official plugins are available:
+A decentralized API marketplace with payment gateway integration built on Solana.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- 🔐 **Wallet Authentication**: Sign in with Solana wallet (SIWS)
+- 💰 **Payment Gateway**: Pay-per-use API access with automatic billing
+- 📊 **API Management**: List, discover, and manage APIs
+- 🚀 **Gateway Routing**: Automatic API request proxying with payment
+- 📈 **Analytics**: Track usage, revenue, and performance
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- **Frontend**: React + TypeScript + Vite + TailwindCSS
+- **Backend**: Node.js + Express + TypeScript
+- **Blockchain**: Solana (wallet authentication)
+- **Database**: PostgreSQL + Supabase
+- **Styling**: TailwindCSS + Lucide Icons
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
+
+### Prerequisites
+- Node.js 18+
+- Solana wallet (Phantom, Solflare, etc.)
+
 
 ```js
 export default defineConfig([

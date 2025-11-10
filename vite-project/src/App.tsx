@@ -22,6 +22,7 @@ import ActivityPage from "./components/ActivityPage";
 import WalletButton from "./components/WalletButton";
 import APIDetailPage from "./components/APIDetailPage";
 import SettingsPage from "./components/SettingsPage";
+import X402Logo from "./components/X402Logo";
 
 type Page =
   | "dashboard"
@@ -140,18 +141,18 @@ const Header: React.FC<{
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center space-x-4">
           <div
-            className="w-8 h-8 bg-white flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+            className="cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => onNavigate("dashboard")}
           >
-            <span className="text-black font-bold">▲</span>
+            <X402Logo size="sm" showText={false} />
           </div>
           <div className="flex items-center space-x-2">
-            <Database className="w-5 h-5 text-purple-600" />
+            <Database className="w-5 h-5 text-cyan-600" />
             <span
               className="text-sm cursor-pointer hover:text-gray-300"
               onClick={() => onNavigate("dashboard")}
             >
-              provider-name's APIs
+              X402 Gateway
             </span>
             <span className="text-gray-500 text-sm">Hobby</span>
             {projectName && (

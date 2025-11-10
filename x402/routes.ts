@@ -12,6 +12,19 @@ const router = Router();
 const db = new DatabaseService();
 
 /**
+ * Generates a gateway URL for an API based on its name
+ *
+ * @param apiName - The name of the API
+ * @returns Gateway URL in format: https://x402-gateway.vercel.app/{slug}
+ */
+function generateGatewayUrl(apiName: string): string {
+  // Create slug from API name (take first 2 words, lowercase, remove special chars)
+  const slugBase = apiName.split(/\s+/).slice(0, 2).join("-").toLowerCase() || "api";
+  const slug = slugBase.replace(/[^a-z0-9-]/g, "");
+  return `https://x402-gateway.vercel.app/${slug}`;
+}
+
+/**
  * Infers API category from tags, description, or name
  *
  * @param tags - Array of tags from the API spec
@@ -290,6 +303,71 @@ router.post("/listings/:id/usage", async (req, res) => {
   }
 });
 
+// Get all usage/activity
+router.get("/usage", async (req, res) => {
+  try {
+    const { limit = "100", owner } = req.query;
+    const usageData = await db.getAllUsage(parseInt(limit as string), owner as string | undefined);
+    res.json({ success: true, data: usageData });
+  } catch (error) {
+    console.error("Error fetching usage data:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch usage data",
+    });
+  }
+});
+
+// Get usage by owner (wallet address)
+router.get("/usage/owner/:walletAddress", async (req, res) => {
+  try {
+    const { walletAddress } = req.params;
+    const { limit = "100" } = req.query;
+    const usageData = await db.getUsageByOwner(walletAddress, parseInt(limit as string));
+    res.json({ success: true, data: usageData });
+  } catch (error) {
+    console.error("Error fetching owner usage data:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch owner usage data",
+    });
+  }
+});
+
+// Get usage for specific API
+router.get("/listings/:id/usage", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = "100" } = req.query;
+    const usageData = await db.getUsageByAPIId(id, parseInt(limit as string));
+    res.json({ success: true, data: usageData });
+  } catch (error) {
+    console.error("Error fetching API usage data:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch API usage data",
+    });
+  }
+});
+
+// Get usage statistics summary
+router.get("/usage/stats/summary", async (req, res) => {
+  try {
+    const { owner, timeRange } = req.query;
+    const stats = await db.getUsageStatsSummary(
+      owner as string | undefined,
+      timeRange as string | undefined,
+    );
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error("Error fetching usage stats:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch usage stats",
+    });
+  }
+});
+
 // ==================== Spec Upload Routes ====================
 
 // Upload and parse OpenAPI spec file
@@ -331,11 +409,14 @@ router.post("/listings/upload-spec", async (req, res) => {
       parsedData.name,
     );
 
+    // Generate gateway URL based on API name
+    const gatewayUrl = generateGatewayUrl(uniqueName);
+
     // Create API listing
     const newListing = {
       name: uniqueName,
       description: parsedData.description,
-      base_url: parsedData.base_url || "",
+      base_url: gatewayUrl, // Use gateway URL instead of original base_url
       api_key: null,
       price_per_call: req.body.pricePerCall || "100", // Default or from form
       category: inferredCategory,
@@ -405,11 +486,14 @@ router.post("/listings/parse-url", async (req, res) => {
       parsedData.name,
     );
 
+    // Generate gateway URL based on API name
+    const gatewayUrl = generateGatewayUrl(uniqueName);
+
     // Create API listing
     const newListing = {
       name: uniqueName,
       description: parsedData.description,
-      base_url: parsedData.base_url || "",
+      base_url: gatewayUrl, // Use gateway URL instead of original base_url
       api_key: null,
       price_per_call: req.body.pricePerCall || "100", // Default or from form
       category: inferredCategory,

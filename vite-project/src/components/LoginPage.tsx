@@ -5,6 +5,7 @@ import type { SolanaSignInInput } from '@solana/wallet-standard-features';
 import { verifySignIn } from '@solana/wallet-standard-util';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Wallet, Check, AlertCircle } from 'lucide-react';
+import X402Logo from './X402Logo';
 
 // Import wallet adapter styles
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -80,22 +81,25 @@ const LoginPage: React.FC = () => {
     }
   }, [wallet, signIn, connect, disconnect, connected, publicKey, setAuthenticated]);
 
-  // Auto-sign-in when wallet connects (for wallets supporting SIWS)
+  // Only auto-trigger sign-in once when wallet first connects (not on every mount)
+  const [hasAttemptedSignIn, setHasAttemptedSignIn] = useState(false);
+  
   useEffect(() => {
-    if (connected && wallet && !success && !loading) {
+    if (connected && wallet && !success && !loading && !hasAttemptedSignIn) {
+      setHasAttemptedSignIn(true);
       handleSignIn();
     }
-  }, [connected, wallet, success, loading, handleSignIn]);
+  }, [connected, wallet, success, loading, hasAttemptedSignIn, handleSignIn]);
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-white mx-auto mb-4 flex items-center justify-center">
-            <span className="text-black font-bold text-2xl">▲</span>
+          <div className="mx-auto mb-4 flex items-center justify-center">
+            <X402Logo size="lg" />
           </div>
-          <h1 className="text-3xl font-bold mb-2">API Marketplace</h1>
+          <h1 className="text-3xl font-bold mb-2">X402 API Gateway</h1>
           <p className="text-gray-400">Sign in with your Solana wallet</p>
         </div>
 

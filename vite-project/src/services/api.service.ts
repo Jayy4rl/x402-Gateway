@@ -156,6 +156,70 @@ export const apiService = {
   },
 };
 
+// ==================== Usage/Activity Services ====================
+
+export interface UsageRecord {
+  id: string;
+  api_id: string;
+  user_address: string;
+  timestamp: string;
+  success: boolean;
+  error?: string;
+  cost: string;
+  api_name: string;
+  api_owner?: string;
+  category?: string;
+}
+
+export interface UsageStats {
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  totalRevenue: string;
+}
+
+export const usageService = {
+  // Get all usage/activity records
+  async getAllUsage(limit: number = 100, owner?: string): Promise<UsageRecord[]> {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    if (owner) params.append('owner', owner);
+    
+    const response = await fetch(`${API_BASE_URL}/usage?${params}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to fetch usage data');
+    return data.data;
+  },
+
+  // Get usage by owner
+  async getUsageByOwner(walletAddress: string, limit: number = 100): Promise<UsageRecord[]> {
+    const response = await fetch(`${API_BASE_URL}/usage/owner/${walletAddress}?limit=${limit}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to fetch owner usage data');
+    return data.data;
+  },
+
+  // Get usage for specific API
+  async getUsageByAPIId(apiId: string, limit: number = 100): Promise<UsageRecord[]> {
+    const response = await fetch(`${API_BASE_URL}/listings/${apiId}/usage?limit=${limit}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to fetch API usage data');
+    return data.data;
+  },
+
+  // Get usage statistics summary
+  async getUsageStats(owner?: string, timeRange?: string): Promise<UsageStats> {
+    const params = new URLSearchParams();
+    if (owner) params.append('owner', owner);
+    if (timeRange) params.append('timeRange', timeRange);
+    
+    const response = await fetch(`${API_BASE_URL}/usage/stats/summary?${params}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to fetch usage stats');
+    return data.data;
+  },
+};
+
 // ==================== GitHub OAuth Services ====================
 
 export const githubService = {

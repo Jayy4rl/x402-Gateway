@@ -353,6 +353,166 @@ export class DatabaseService {
       [apiId, cost],
     );
   }
+
+  // ==================== Usage Data Retrieval ====================
+
+  /**
+   * Gets all usage records with optional filtering
+   *
+   * @param limit - Maximum number of records to return
+   * @param owner - Optional owner wallet address to filter by their APIs
+   * @returns Array of usage records with API details
+   */
+  async getAllUsage(limit: number = 100, owner?: string): Promise<unknown[]> {
+    let query = `
+      SELECT 
+        u.id,
+        u.api_id,
+        u.user_address,
+        u.timestamp,
+        u.success,
+        u.error,
+        u.cost,
+        a.name as api_name,
+        a.owner as api_owner,
+        a.category
+      FROM api_usage u
+      JOIN api_listings a ON u.api_id = a.id
+    `;
+
+    const params: unknown[] = [];
+
+    if (owner) {
+      query += ` WHERE a.owner = $1`;
+      params.push(owner);
+      query += ` ORDER BY u.timestamp DESC LIMIT $2`;
+      params.push(limit);
+    } else {
+      query += ` ORDER BY u.timestamp DESC LIMIT $1`;
+      params.push(limit);
+    }
+
+    const result = await pool.query(query, params);
+    return result.rows;
+  }
+
+  /**
+   * Gets usage records for a specific owner's APIs
+   *
+   * @param owner - The wallet address of the API owner
+   * @param limit - Maximum number of records to return
+   * @returns Array of usage records
+   */
+  async getUsageByOwner(owner: string, limit: number = 100): Promise<unknown[]> {
+    const result = await pool.query(
+      `SELECT 
+        u.id,
+        u.api_id,
+        u.user_address,
+        u.timestamp,
+        u.success,
+        u.error,
+        u.cost,
+        a.name as api_name,
+        a.category
+      FROM api_usage u
+      JOIN api_listings a ON u.api_id = a.id
+      WHERE a.owner = $1
+      ORDER BY u.timestamp DESC
+      LIMIT $2`,
+      [owner, limit],
+    );
+    return result.rows;
+  }
+
+  /**
+   * Gets usage records for a specific API
+   *
+   * @param apiId - The ID of the API listing
+   * @param limit - Maximum number of records to return
+   * @returns Array of usage records
+   */
+  async getUsageByAPIId(apiId: string, limit: number = 100): Promise<unknown[]> {
+    const result = await pool.query(
+      `SELECT 
+        u.id,
+        u.api_id,
+        u.user_address,
+        u.timestamp,
+        u.success,
+        u.error,
+        u.cost,
+        a.name as api_name
+      FROM api_usage u
+      JOIN api_listings a ON u.api_id = a.id
+      WHERE u.api_id = $1
+      ORDER BY u.timestamp DESC
+      LIMIT $2`,
+      [apiId, limit],
+    );
+    return result.rows;
+  }
+
+  /**
+   * Gets usage statistics summary
+   *
+   * @param owner - Optional owner wallet address to filter by
+   * @param timeRange - Optional time range filter (1h, 24h, 7d, 30d)
+   * @returns Summary statistics
+   */
+  async getUsageStatsSummary(
+    owner?: string,
+    timeRange?: string,
+  ): Promise<{
+    totalRequests: number;
+    successfulRequests: number;
+    failedRequests: number;
+    totalRevenue: string;
+  }> {
+    let timeFilter = "";
+    const params: unknown[] = [];
+    let paramIndex = 1;
+
+    // Add time range filter
+    if (timeRange) {
+      const intervals: Record<string, string> = {
+        "1h": "1 hour",
+        "24h": "24 hours",
+        "7d": "7 days",
+        "30d": "30 days",
+      };
+      const interval = intervals[timeRange] || "24 hours";
+      timeFilter = `AND u.timestamp >= NOW() - INTERVAL '${interval}'`;
+    }
+
+    // Add owner filter
+    let ownerFilter = "";
+    if (owner) {
+      ownerFilter = `AND a.owner = $${paramIndex}`;
+      params.push(owner);
+      paramIndex++;
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        COUNT(*) as total_requests,
+        COUNT(*) FILTER (WHERE u.success = true) as successful_requests,
+        COUNT(*) FILTER (WHERE u.success = false) as failed_requests,
+        COALESCE(SUM(CAST(u.cost AS NUMERIC)), 0) as total_revenue
+      FROM api_usage u
+      JOIN api_listings a ON u.api_id = a.id
+      WHERE 1=1 ${timeFilter} ${ownerFilter}`,
+      params,
+    );
+
+    const row = result.rows[0];
+    return {
+      totalRequests: parseInt(row.total_requests) || 0,
+      successfulRequests: parseInt(row.successful_requests) || 0,
+      failedRequests: parseInt(row.failed_requests) || 0,
+      totalRevenue: row.total_revenue.toString(),
+    };
+  }
 }
 
 // Export singleton instance
