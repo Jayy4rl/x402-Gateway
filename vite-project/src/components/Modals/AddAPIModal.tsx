@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, DollarSign, Link2, FileText, Key, Tag } from 'lucide-react';
-import type { AddAPIFormData } from '../../types/marketplace.types';
+import { X, DollarSign, Link2, FileText, Key, Tag, ChevronDown } from 'lucide-react';
+import type { AddAPIFormData } from '../../types/marketplace.types.ts';
+import { API_CATEGORIES } from '../../constants/categories.ts';
 
 interface AddAPIModalProps {
   isOpen: boolean;
@@ -39,6 +40,10 @@ const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) 
     }
     if (!formData.pricePerCall.trim()) {
       setError('Price per call is required');
+      return false;
+    }
+    if (!formData.category || formData.category.trim() === '') {
+      setError('Category is required');
       return false;
     }
     // price must be a positive number (we allow values like 0.001 or integer sats)
@@ -247,28 +252,30 @@ const AddAPIModal: React.FC<AddAPIModalProps> = ({ isOpen, onClose, onSubmit }) 
           {/* Category */}
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-2">
-              Category
+              Category <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none z-10" />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none z-10" />
               <select
                 id="category"
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full bg-black border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors appearance-none cursor-pointer"
+                className="w-full bg-black border border-gray-800 rounded-lg pl-10 pr-10 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors appearance-none cursor-pointer hover:border-gray-700"
+                required
               >
-                <option value="">Select a category</option>
-                <option value="Weather">Weather</option>
-                <option value="Finance">Finance</option>
-                <option value="Data">Data & Analytics</option>
-                <option value="AI/ML">AI/ML</option>
-                <option value="Maps">Maps & Location</option>
-                <option value="Communication">Communication</option>
-                <option value="Social">Social Media</option>
-                <option value="Other">Other</option>
+                <option value="" className="bg-gray-900">Select a category...</option>
+                {API_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat} className="bg-gray-900">
+                    {cat}
+                  </option>
+                ))}
               </select>
             </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Choose the most relevant category for your API
+            </p>
           </div>
 
           {/* Form Actions */}

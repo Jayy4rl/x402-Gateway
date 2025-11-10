@@ -42,15 +42,25 @@ const getRoutesConfig = async (): Promise<Record<string, RouteConfig>> => {
   const listings = await db.getAllAPIListings();
 
   listings.forEach(listing => {
-    // Extract the path from the gateway URL
-    const urlPath = new URL(listing.base_url).pathname;
-    const route = `*${urlPath}/*`;
+    // Skip if base_url is empty or invalid
+    if (!listing.base_url || listing.base_url.trim() === "") {
+      console.warn(`Skipping listing ${listing.id} - empty base_url`);
+      return;
+    }
 
-    routesConfig[route] = {
-      price: listing.price_per_call,
-      network: "solana-devnet",
-      payTo: listing.owner,
-    };
+    try {
+      // Extract the path from the gateway URL
+      const urlPath = new URL(listing.base_url).pathname;
+      const route = `*${urlPath}/*`;
+
+      routesConfig[route] = {
+        price: listing.price_per_call,
+        network: "solana-devnet",
+        payTo: listing.owner,
+      };
+    } catch (error) {
+      console.warn(`Skipping listing ${listing.id} - invalid URL: ${listing.base_url}`);
+    }
   });
 
   return routesConfig;

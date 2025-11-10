@@ -1,9 +1,6 @@
 import React, { useState } from "react";
 import {
   Search,
-  Grid,
-  List,
-  MoreVertical,
   Activity,
   TrendingUp,
   Link2,
@@ -19,6 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "./context/AuthContext";
 import LoginPage from "./components/LoginPage";
+import Dashboard from "./components/Dashboard";
 import MarketplaceListingPage from "./components/MarketplaceListingPage";
 import ActivityPage from "./components/ActivityPage";
 import WalletButton from "./components/WalletButton";
@@ -43,7 +41,9 @@ const App: React.FC = () => {
   // Show authenticated content
   return (
     <div>
-      {currentPage === "dashboard" && <Dashboard onNavigate={setCurrentPage} />}
+      {currentPage === "dashboard" && (
+        <DashboardWrapper onNavigate={setCurrentPage} />
+      )}
       {currentPage === "new-project" && (
         <NewProject onNavigate={setCurrentPage} />
       )}
@@ -59,6 +59,18 @@ const App: React.FC = () => {
       {currentPage === "activity" && (
         <ActivityPageWrapper onNavigate={setCurrentPage} />
       )}
+    </div>
+  );
+};
+
+// Dashboard Wrapper
+const DashboardWrapper: React.FC<{ onNavigate: (page: Page) => void }> = ({
+  onNavigate,
+}) => {
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <Header onNavigate={onNavigate} currentPage="dashboard" />
+      <Dashboard onNavigate={onNavigate} />
     </div>
   );
 };
@@ -137,169 +149,8 @@ const Header: React.FC<{
         >
           Activity
         </button>
-        <button className={`py-3 text-gray-400 hover:text-white`}>
-          Settings
-        </button>
       </nav>
     </header>
-  );
-};
-
-// Dashboard Component - No dummy data
-const Dashboard: React.FC<{ onNavigate: (page: Page) => void }> = ({
-  onNavigate,
-}) => {
-  const apis: Array<{
-    id: number;
-    name: string;
-    url: string;
-    repo: string;
-    status: string;
-    lastUpdate: string;
-    branch: string;
-    requests: string;
-    revenue: string;
-  }> = [];
-
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <Header onNavigate={onNavigate} currentPage="dashboard" />
-
-      <main className="px-6 py-8 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex-1 max-w-2xl relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search APIs..."
-              className="w-full bg-black border border-gray-800 rounded pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-gray-600"
-            />
-          </div>
-          <div className="flex items-center space-x-2 ml-4">
-            <button className="p-2 border border-gray-800 rounded hover:bg-gray-900">
-              <List className="w-4 h-4" />
-            </button>
-            <button className="p-2 border border-gray-800 rounded hover:bg-gray-900">
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              className="px-4 py-2 bg-white text-black rounded text-sm font-medium hover:bg-gray-200"
-              onClick={() => onNavigate("marketplace-listing")}
-            >
-              Add New...
-            </button>
-          </div>
-        </div>
-
-        {/* Usage Section - No Data State */}
-        <div className="mb-8">
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Usage</h2>
-              <button className="px-3 py-1.5 text-sm border border-gray-700 rounded hover:bg-gray-800">
-                Upgrade
-              </button>
-            </div>
-            <div className="text-sm text-gray-400 mb-2">Last 30 days</div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Activity className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm">API Requests</span>
-                </div>
-                <span className="text-sm text-gray-500">No data</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm">Revenue</span>
-                </div>
-                <span className="text-sm text-gray-500">No data</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* APIs List - Empty State */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4">APIs</h2>
-          {apis.length === 0 ? (
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-12 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center">
-                  <Server className="w-8 h-8 text-gray-600" />
-                </div>
-              </div>
-              <h3 className="text-lg font-medium mb-2">No APIs Yet</h3>
-              <p className="text-gray-400 mb-6">
-                Get started by deploying your first API to the marketplace
-              </p>
-              <button
-                onClick={() => onNavigate("marketplace-listing")}
-                className="px-6 py-3 bg-white text-black rounded text-sm font-medium hover:bg-gray-200 inline-flex items-center space-x-2"
-              >
-                <Zap className="w-4 h-4" />
-                <span>Deploy Your First API</span>
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-0 border border-gray-800 rounded-lg overflow-hidden">
-              {apis.map((api, index) => (
-                <div
-                  key={api.id}
-                  className={`bg-gray-900 p-6 flex items-center justify-between hover:bg-gray-850 transition-colors cursor-pointer ${
-                    index !== 0 ? "border-t border-gray-800" : ""
-                  }`}
-                  onClick={() => onNavigate("project-overview")}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-purple-600 rounded flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="font-medium">{api.name}</h3>
-                        <span
-                          className={`px-2 py-0.5 text-xs rounded ${
-                            api.status === "Live"
-                              ? "bg-green-900 text-green-300"
-                              : "bg-gray-700 text-gray-300"
-                          }`}
-                        >
-                          {api.status}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-400">{api.url}</div>
-                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                        <span>{api.repo}</span>
-                        <span>•</span>
-                        <span>
-                          {api.lastUpdate} on {api.branch}
-                        </span>
-                        <span>•</span>
-                        <span>{api.requests}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-6">
-                    <div className="text-right">
-                      <div className="text-sm font-medium">{api.revenue}</div>
-                      <div className="text-xs text-gray-500">Revenue</div>
-                    </div>
-                    <button className="p-2 hover:bg-gray-800 rounded">
-                      <Activity className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-800 rounded">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
   );
 };
 

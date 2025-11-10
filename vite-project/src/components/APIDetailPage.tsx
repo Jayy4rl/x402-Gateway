@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Activity, TrendingUp, DollarSign, ExternalLink, Code } from 'lucide-react';
-import { apiService } from '../services/api.service';
-import APIEndpoints from './APIEndpoints';
-import type { APIListing } from '../types/marketplace.types';
+import { apiService } from '../services/api.service.ts';
+import APIEndpoints from './APIEndpoints.tsx';
+import type { APIListing } from '../types/marketplace.types.ts';
 
 const APIDetailPage: React.FC = () => {
   const { apiId } = useParams<{ apiId: string }>();

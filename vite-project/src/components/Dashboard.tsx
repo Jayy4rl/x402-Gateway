@@ -3,100 +3,49 @@ import {
   Search,
   Grid,
   List,
-  MoreVertical,
   Activity,
   TrendingUp,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { apiService } from "../services/api.service";
-import type { APIListing } from "../types/marketplace.types";
+import { apiService } from "../services/api.service.ts";
+import type { APIListing } from "../types/marketplace.types.ts";
+import APICard from "./APICard.tsx";
 
-const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
+interface DashboardProps {
+  onNavigate: (page: "dashboard" | "marketplace-listing" | "activity" | "new-project" | "project-overview" | "analytics") => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [apis, setApis] = useState<APIListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch APIs on component mount
-  useEffect(() => {
-    const fetchApis = async () => {
-      try {
-        setLoading(true);
-        const data = await apiService.getAllListings();
-        setApis(data);
-      } catch (err) {
-        console.error("Error fetching APIs:", err);
-        setError("Failed to load APIs");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Fetch APIs function
+  const fetchApis = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await apiService.getAllListings();
+      setApis(data);
+    } catch (err) {
+      console.error("Error fetching APIs:", err);
+      setError("Failed to load APIs");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Fetch APIs on component mount (only once)
+  useEffect(() => {
     fetchApis();
   }, []);
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  };
-
   // Handle Add New button click
   const handleAddNew = () => {
-    navigate("/marketplace-listing");
+    onNavigate("marketplace-listing");
   };
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <header className="border-b border-gray-800">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 bg-white flex items-center justify-center">
-              <span className="text-black font-bold">▲</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-purple-600 rounded-full"></div>
-              <span className="text-sm">provider-name's APIs</span>
-              <span className="text-gray-500 text-sm">Hobby</span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button className="px-3 py-1.5 text-sm hover:bg-gray-900 rounded">
-              Find...
-            </button>
-            <span className="text-sm">F</span>
-            <button className="px-3 py-1.5 text-sm hover:bg-gray-900 rounded">
-              Feedback
-            </button>
-            <button className="w-8 h-8 bg-yellow-400 rounded-full"></button>
-          </div>
-        </div>
-
-        <nav className="flex items-center space-x-6 px-6 text-sm border-t border-gray-800">
-          <button className="py-3 border-b-2 border-white">APIs</button>
-          <button className="py-3 text-gray-400 hover:text-white">
-            Integrations
-          </button>
-          <button className="py-3 text-gray-400 hover:text-white">
-            Deployments
-          </button>
-          <button className="py-3 text-gray-400 hover:text-white">
-            Activity
-          </button>
-          <button className="py-3 text-gray-400 hover:text-white">
-            Domains
-          </button>
-          <button className="py-3 text-gray-400 hover:text-white">Usage</button>
-          <button className="py-3 text-gray-400 hover:text-white">
-            Observability
-          </button>
-          <button className="py-3 text-gray-400 hover:text-white">
-            Settings
-          </button>
-        </nav>
-      </header>
-
       {/* Main Content */}
       <main className="px-6 py-8 max-w-7xl mx-auto">
         {/* Search and Actions */}
@@ -195,54 +144,16 @@ const Dashboard: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="space-y-0 border border-gray-800 rounded-lg overflow-hidden">
-              {apis.map((api, index) => (
-                <div
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {apis.map((api) => (
+                <APICard
                   key={api.id}
-                  className={`bg-gray-900 p-6 flex items-center justify-between hover:bg-gray-850 transition-colors ${
-                    index !== 0 ? "border-t border-gray-800" : ""
-                  }`}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-linear-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">⚡</span>
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="font-medium">{api.name}</h3>
-                        <span className="px-2 py-0.5 text-xs rounded bg-green-900 text-green-300">
-                          Live
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {api.baseUrl}
-                      </div>
-                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                        <span>{api.category || "Uncategorized"}</span>
-                        <span>•</span>
-                        <span>Added {formatDate(api.createdAt)}</span>
-                        {api.description && (
-                          <>
-                            <span>•</span>
-                            <span className="max-w-md truncate">{api.description}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-6">
-                    <div className="text-right">
-                      <div className="text-sm font-medium">{api.pricePerCall}</div>
-                      <div className="text-xs text-gray-500">Per Call</div>
-                    </div>
-                    <button className="p-2 hover:bg-gray-800 rounded">
-                      <Activity className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-800 rounded">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                  api={api}
+                  onClick={() => {
+                    // TODO: Navigate to API detail page
+                    console.log('Navigate to API:', api.id);
+                  }}
+                />
               ))}
             </div>
           )}

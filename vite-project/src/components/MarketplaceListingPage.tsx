@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Check, AlertCircle, Link2, FileText } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import AddAPIModal from './Modals/AddAPIModal';
-import UploadSpecModal from './Modals/UploadSpecModal';
-import PasteUrlModal from './Modals/PasteUrlModal';
-import { apiService } from '../services/api.service';
-import type { APIListing, AddAPIFormData } from '../types/marketplace.types';
+import { useAuth } from '../context/AuthContext.tsx';
+import AddAPIModal from './Modals/AddAPIModal.tsx';
+import UploadSpecModal from './Modals/UploadSpecModal.tsx';
+import PasteUrlModal from './Modals/PasteUrlModal.tsx';
+import APICard from './APICard.tsx';
+import { apiService } from '../services/api.service.ts';
+import type { APIListing, AddAPIFormData } from '../types/marketplace.types.ts';
 
 interface MarketplaceListingPageProps {
   // Accept either a state setter (used in several callers) or a simple navigation callback
@@ -261,27 +262,14 @@ const MarketplaceListingPage: React.FC<MarketplaceListingPageProps> = ({ onNavig
             <h3 className="text-2xl font-bold mb-6">Recently Added to Marketplace</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {apiListings.slice(0, 3).map((api) => (
-                <div
+                <APICard
                   key={api.id}
-                  className="bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-gray-700 transition-colors"
-                >
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-10 h-10 bg-linear-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center">
-                      <span className="text-white font-bold">⚡</span>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold">{api.name}</h4>
-                      <p className="text-xs text-gray-500">{api.category}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-400 mb-4 line-clamp-2">
-                    {api.description || 'No description'}
-                  </p>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-purple-400 font-medium">{api.pricePerCall}</span>
-                    <span className="text-gray-500">per call</span>
-                  </div>
-                </div>
+                  api={api}
+                  onClick={() => {
+                    // TODO: Navigate to API detail
+                    console.log('View API:', api.id);
+                  }}
+                />
               ))}
             </div>
           </div>

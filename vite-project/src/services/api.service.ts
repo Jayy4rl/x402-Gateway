@@ -2,6 +2,46 @@ import type { APIListing, AddAPIFormData, GitHubRepo, GitHubUser } from '../type
 
 const API_BASE_URL = 'http://localhost:4021/api';
 
+// Backend API response type (snake_case)
+interface APIListingResponse {
+  id: string;
+  name: string;
+  description: string;
+  base_url: string;
+  api_key?: string;
+  price_per_call: string;
+  category?: string;
+  tags?: string[];
+  status: "active" | "inactive" | "pending";
+  source: "github" | "manual";
+  github_repo?: string;
+  created_at: string;
+  updated_at: string;
+  owner: string;
+  total_calls?: string;
+  revenue?: string;
+}
+
+// Helper function to transform snake_case API response to camelCase
+const transformListing = (listing: APIListingResponse): APIListing => ({
+  id: listing.id,
+  name: listing.name,
+  description: listing.description || '',
+  baseUrl: listing.base_url,
+  apiKey: listing.api_key,
+  pricePerCall: listing.price_per_call,
+  category: listing.category,
+  tags: listing.tags || [],
+  status: listing.status,
+  source: listing.source,
+  githubRepo: listing.github_repo,
+  createdAt: listing.created_at,
+  updatedAt: listing.updated_at,
+  owner: listing.owner,
+  totalCalls: listing.total_calls ? parseInt(listing.total_calls) : 0,
+  revenue: listing.revenue || '0',
+});
+
 // ==================== API Listing Services ====================
 
 export const apiService = {
@@ -10,7 +50,7 @@ export const apiService = {
     const response = await fetch(`${API_BASE_URL}/listings`);
     const data = await response.json();
     if (!data.success) throw new Error(data.error || 'Failed to fetch listings');
-    return data.data;
+    return data.data.map(transformListing);
   },
 
   // Get API listing by ID
@@ -18,7 +58,7 @@ export const apiService = {
     const response = await fetch(`${API_BASE_URL}/listings/${id}`);
     const data = await response.json();
     if (!data.success) throw new Error(data.error || 'Failed to fetch listing');
-    return data.data;
+    return transformListing(data.data);
   },
 
   // Create new API listing
@@ -32,7 +72,7 @@ export const apiService = {
     });
     const data = await response.json();
     if (!data.success) throw new Error(data.error || 'Failed to create listing');
-    return data.data;
+    return transformListing(data.data);
   },
 
   // Update API listing
@@ -46,7 +86,7 @@ export const apiService = {
     });
     const data = await response.json();
     if (!data.success) throw new Error(data.error || 'Failed to update listing');
-    return data.data;
+    return transformListing(data.data);
   },
 
   // Delete API listing
@@ -67,7 +107,7 @@ export const apiService = {
     const response = await fetch(`${API_BASE_URL}/listings/owner/${walletAddress}`);
     const data = await response.json();
     if (!data.success) throw new Error(data.error || 'Failed to fetch user listings');
-    return data.data;
+    return data.data.map(transformListing);
   },
 
   // Upload OpenAPI/Swagger spec

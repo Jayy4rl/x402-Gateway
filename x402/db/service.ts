@@ -77,6 +77,36 @@ export class DatabaseService {
   }
 
   /**
+   * Checks if an API listing with the given name exists
+   *
+   * @param name - The name to check
+   * @returns The API listing if found, null otherwise
+   */
+  async getAPIListingByName(name: string): Promise<APIListing | null> {
+    const result = await pool.query("SELECT * FROM api_listings WHERE name = $1", [name]);
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Generates a unique API name by appending numbers if duplicates exist
+   *
+   * @param baseName - The base name to make unique
+   * @returns A unique name that doesn't exist in the database
+   */
+  async generateUniqueName(baseName: string): Promise<string> {
+    let uniqueName = baseName;
+    let counter = 2;
+
+    // Keep checking until we find a unique name
+    while (await this.getAPIListingByName(uniqueName)) {
+      uniqueName = `${baseName}-${counter}`;
+      counter++;
+    }
+
+    return uniqueName;
+  }
+
+  /**
    * Updates an API listing
    *
    * @param id - The ID of the API listing to update

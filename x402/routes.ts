@@ -5,11 +5,48 @@ import {
   parseYAMLSpec,
   parseDocumentationURL,
   type ParsedEndpoint,
-} from "./db/parsers/index";
-import type { APIEndpoint } from "./db/schema";
+} from "./db/parsers/index.ts";
+import type { APIEndpoint } from "./db/schema.ts";
 
 const router = Router();
 const db = new DatabaseService();
+
+/**
+ * Infers API category from tags, description, or name
+ *
+ * @param tags - Array of tags from the API spec
+ * @param description - API description
+ * @param name - API name
+ * @returns Inferred category or "Other"
+ */
+function inferCategory(tags?: string[], description?: string, name?: string): string {
+  const text = [...(tags || []), description || "", name || ""].join(" ").toLowerCase();
+
+  // Category mapping based on keywords
+  const categoryKeywords: Record<string, string[]> = {
+    Payment: ["payment", "billing", "stripe", "paypal", "transaction", "checkout"],
+    Weather: ["weather", "forecast", "climate", "temperature", "meteorolog"],
+    Social: ["social", "twitter", "facebook", "instagram", "linkedin", "reddit"],
+    Communication: ["email", "sms", "messaging", "chat", "notification", "twilio"],
+    Data: ["data", "analytics", "database", "storage", "query"],
+    "AI/ML": ["ai", "ml", "machine learning", "neural", "gpt", "openai", "artificial intelligence"],
+    Mapping: ["map", "geo", "location", "gps", "navigation", "address"],
+    "E-commerce": ["ecommerce", "shop", "store", "product", "cart", "order"],
+    Finance: ["finance", "stock", "trading", "bank", "currency", "crypto"],
+    Media: ["image", "video", "audio", "media", "photo", "music"],
+    Authentication: ["auth", "login", "oauth", "sso", "identity", "user"],
+    Development: ["github", "gitlab", "code", "repository", "developer"],
+  };
+
+  // Check for keyword matches
+  for (const [category, keywords] of Object.entries(categoryKeywords)) {
+    if (keywords.some(keyword => text.includes(keyword))) {
+      return category;
+    }
+  }
+
+  return "Other";
+}
 
 /**
  * Converts parsed endpoints to database format
@@ -86,26 +123,30 @@ router.post("/listings", async (req, res) => {
     console.log("Received form data:", req.body);
 
     // Validation
-    if (!name || !base_url || !price_per_call || !owner) {
+    if (!name || !base_url || !price_per_call || !owner || !category) {
       console.log("Missing fields:", {
         name: !name,
         base_url: !base_url,
         price_per_call: !price_per_call,
         owner: !owner,
+        category: !category,
       });
       return res.status(400).json({
         success: false,
-        error: "Missing required fields: name, baseUrl, pricePerCall, walletAddress",
+        error: "Missing required fields: name, baseUrl, pricePerCall, walletAddress, category",
       });
     }
 
+    // Generate unique name if duplicate exists
+    const uniqueName = await db.generateUniqueName(name);
+
     const newListing = {
-      name,
+      name: uniqueName,
       description: description || "",
       base_url,
       api_key: api_key || null,
       price_per_call,
-      category: category || "Uncategorized",
+      category,
       source: source || "manual",
       owner,
       status: "active",
@@ -118,7 +159,10 @@ router.post("/listings", async (req, res) => {
     res.status(201).json({
       success: true,
       data: createdListing,
-      message: "API listing created successfully",
+      message:
+        uniqueName !== name
+          ? `API listing created as "${uniqueName}" (original name already exists)`
+          : "API listing created successfully",
     });
   } catch (error) {
     console.error("Error creating API listing:", error);
@@ -277,14 +321,24 @@ router.post("/listings/upload-spec", async (req, res) => {
 
     const parsedData = parseResult.data;
 
+    // Generate unique name if duplicate exists
+    const uniqueName = await db.generateUniqueName(parsedData.name);
+
+    // Infer category from tags, description, and name
+    const inferredCategory = inferCategory(
+      parsedData.tags,
+      parsedData.description,
+      parsedData.name,
+    );
+
     // Create API listing
     const newListing = {
-      name: parsedData.name,
+      name: uniqueName,
       description: parsedData.description,
       base_url: parsedData.base_url || "",
       api_key: null,
       price_per_call: req.body.pricePerCall || "100", // Default or from form
-      category: parsedData.tags?.[0] || "Uncategorized",
+      category: inferredCategory,
       source: "spec_upload",
       owner,
       status: "active",
@@ -341,14 +395,24 @@ router.post("/listings/parse-url", async (req, res) => {
 
     const parsedData = parseResult.data;
 
+    // Generate unique name if duplicate exists
+    const uniqueName = await db.generateUniqueName(parsedData.name);
+
+    // Infer category from tags, description, and name
+    const inferredCategory = inferCategory(
+      parsedData.tags,
+      parsedData.description,
+      parsedData.name,
+    );
+
     // Create API listing
     const newListing = {
-      name: parsedData.name,
+      name: uniqueName,
       description: parsedData.description,
       base_url: parsedData.base_url || "",
       api_key: null,
       price_per_call: req.body.pricePerCall || "100", // Default or from form
-      category: parsedData.tags?.[0] || "Uncategorized",
+      category: inferredCategory,
       source: "url_import",
       owner,
       status: "active",
