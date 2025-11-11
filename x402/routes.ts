@@ -18,10 +18,12 @@ const db = new DatabaseService();
  * @returns Gateway URL in format: https://x402-gateway.vercel.app/{slug}
  */
 function generateGatewayUrl(apiName: string): string {
-  // Create slug from API name (take first 2 words, lowercase, remove special chars)
   const slugBase = apiName.split(/\s+/).slice(0, 2).join("-").toLowerCase() || "api";
   const slug = slugBase.replace(/[^a-z0-9-]/g, "");
-  return `https://x402-gateway.vercel.app/${slug}`;
+
+  // Use environment variable for gateway base URL
+  const gatewayBaseUrl = process.env.GATEWAY_BASE_URL || "https://x402-gateway-e98o.onrender.com";
+  return `${gatewayBaseUrl}/${slug}`;
 }
 
 /**
