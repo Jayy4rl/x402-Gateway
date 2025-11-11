@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/:slug/:path*",
-      "destination": "https://x402-gateway.onrender.com/:slug/:path*"
+      "destination": "https://x402-gateway.onrender.com/apis/:slug/:path*"
     },
     {
       "source": "/(.*)",
